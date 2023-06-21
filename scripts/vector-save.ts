@@ -1,3 +1,4 @@
+import path from 'path';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { CharacterTextSplitter } from 'langchain/text_splitter';
 import { HNSWLib } from 'langchain/vectorstores/hnswlib';
@@ -23,7 +24,7 @@ const main = async () => {
   console.log(`分割文档个数：${docs.length}`);
 
   const vectorStore = await HNSWLib.fromDocuments(docs, embeddings);
-  const directory = VECTOR_STORE_DIRECTORY;
+  const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY) ;
   await vectorStore.save(directory);
   console.log('加载完成');
 };

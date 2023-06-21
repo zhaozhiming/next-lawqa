@@ -1,3 +1,4 @@
+import path from 'path';
 import { StreamingTextResponse, LangChainStream, Message } from 'ai';
 import { CallbackManager } from 'langchain/callbacks';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
 
-  const directory = VECTOR_STORE_DIRECTORY;
+  const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY) ;
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
   const similarDocs = await vectorStore.similaritySearch(
     userSubmitPrompt.content,
