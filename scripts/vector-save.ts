@@ -17,6 +17,8 @@ const main = async () => {
     '.txt': (path) => new TextLoader(path),
   });
   const sourceDocs = await loader.load();
+  console.log(`原始文档个数：${sourceDocs.length}`);
+
   const docs = await splitter.splitDocuments(sourceDocs);
   console.log(`分割文档个数：${docs.length}`);
 

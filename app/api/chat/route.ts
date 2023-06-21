@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   });
 
   const chatMessages: BaseChatMessage[] = [
-    new SystemChatMessage(`      
+    new SystemChatMessage(`
       You are a valuable assistant to the Chinese law expert. 
       Please provide answers to questions based on the information enclosed within four pound signs (####).
       Always respond in Chinese.
