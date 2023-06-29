@@ -1,4 +1,5 @@
 import path from 'path';
+import { exec } from 'child_process';
 import { StreamingTextResponse, LangChainStream, Message } from 'ai';
 import { CallbackManager } from 'langchain/callbacks';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
@@ -12,11 +13,28 @@ import { HNSWLib } from 'langchain/vectorstores/hnswlib';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { VECTOR_STORE_DIRECTORY } from '@/app/constants';
 
+
+const executeCommand = (command: string) => {
+   exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`error: ${error}`);
+      return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+  });
+}
+
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
 
-  const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY) ;
+  // add production log
+  executeCommand('pwd');
+  executeCommand('ls -l');
+  executeCommand('ls -l /var/task/');
+
+  const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY);
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
   const similarDocs = await vectorStore.similaritySearch(
     userSubmitPrompt.content,
