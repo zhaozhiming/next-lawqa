@@ -40,8 +40,6 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
 
-  // add production log
-  executeCommand('pwd');
   const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY);
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory);
@@ -67,8 +65,6 @@ export async function POST(req: Request) {
       hnswlibIndex
     );
   }
-  executeCommand('ls -l');
-  executeCommand('ls -lh vector-store');
 
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
   const similarDocs = await vectorStore.similaritySearch(
