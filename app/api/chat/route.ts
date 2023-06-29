@@ -31,8 +31,8 @@ const dowloadVectoreStore = async (directory: string) => {
     'https://raw.githubusercontent.com/zhaozhiming/next-lawqa/main/vector-store';
   await Promise.all([
     download(`${baseUrl}/args.json`, argsJson),
-    download(`${baseUrl}/args.json`, docstoreJson),
-    download(`${baseUrl}/args.json`, hnswlibIndex),
+    download(`${baseUrl}/docstore.json`, docstoreJson),
+    download(`${baseUrl}/hnswlib.index`, hnswlibIndex),
   ]);
 };
 
@@ -40,8 +40,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
 
-  // const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY);
-  const directory = path.join(process.cwd(), 'foo');
+  const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY);
   await dowloadVectoreStore(directory);
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
   const similarDocs = await vectorStore.similaritySearch(
