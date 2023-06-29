@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     );
   }
   executeCommand('ls -l');
+  executeCommand('ls -lh vector-store');
 
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
   const similarDocs = await vectorStore.similaritySearch(
