@@ -33,7 +33,6 @@ export async function POST(req: Request) {
   executeCommand('pwd');
   executeCommand('ls -l');
   executeCommand('ls -l ___vc');
-  executeCommand('cat ___next_launcher.cjs');
 
   const directory = path.join(process.cwd(), VECTOR_STORE_DIRECTORY);
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
