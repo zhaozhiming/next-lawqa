@@ -14,6 +14,7 @@ export const checkLlmChain = (): LLMChain => {
       openAIApiKey: process.env.CHATGPT_APIKEY,
       temperature: 0,
       maxTokens: 1,
+      timeout: 10000,
     });
     const checkPrompt = ChatPromptTemplate.fromPromptMessages([
       SystemMessagePromptTemplate.fromTemplate(`

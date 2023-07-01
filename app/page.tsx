@@ -7,7 +7,10 @@ import {
   AiOutlineRobot,
   AiOutlineUser,
 } from 'react-icons/ai';
+import { toast } from 'react-toastify';
+import { Slide, ToastContainer } from 'react-toastify';
 import { Message, QaResult, submitQuestion } from './chat';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -40,12 +43,18 @@ export default function Home() {
     setMessages(newMessags);
     setInput('');
 
-    const res = await submitQuestion(newMessags);
-    setResult({
-      answer: res.answer,
-      links: res.links,
-    });
-    setIsLoading(false);
+    try {
+      const res = await submitQuestion(newMessags);
+      setResult({
+        answer: res.answer,
+        links: res.links,
+      });
+    } catch (e) {
+      setMessages(newMessags.slice(0, -1));
+      toast.error('问错错误，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderMessage = (message: Message) => {
@@ -111,6 +120,11 @@ export default function Home() {
           onChange={handleInputChange}
         />
       </form>
+      <ToastContainer
+        hideProgressBar={true}
+        position="top-center"
+        transition={Slide}
+      />
     </div>
   );
 }

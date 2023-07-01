@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     openAIApiKey: process.env.CHATGPT_APIKEY,
     temperature: 0.9,
     maxTokens: 500,
+    timeout: 10000,
   });
 
   const chatMessages: BaseChatMessage[] = [
