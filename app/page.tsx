@@ -86,8 +86,8 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl pt-12 pb-20 flex flex-col stretch bg-zinc-50">
-      <div className="flex flex-row space-between items-center px-8">
+    <div className="mx-auto w-full max-w-xl pt-12 pb-20 flex flex-col stretch bg-zinc-50 min-h-screen">
+      <div className="flex flex-row justify-between items-center px-8 pb-8 border-b">
         <header className="text-2xl font-bold">AI 劳动法问题咨询</header>
         <button
           className="btn-neutral w-16 h-8 rounded-md"
@@ -96,7 +96,7 @@ export default function Home() {
           重置
         </button>
       </div>
-      <div className="flex flex-col divide-y px-8 min-h-screen ">
+      <div className="flex flex-col divide-y px-8 ">
         {messages.length > 0 ? messages.map((m) => renderMessage(m)) : null}
         {isLoading && (
           <AiOutlineLoading3Quarters className="icon-spin h-6 w-6" />
@@ -105,7 +105,7 @@ export default function Home() {
 
       <form onSubmit={handleSubmit}>
         <input
-          className="fixed w-full max-w-lg mx-4 bottom-0 border border-gray-300 rounded mb-8 shadow-xl p-2 outline-none"
+          className="fixed w-full max-w-xs mx-8 bottom-0 border border-gray-300 rounded mb-8 shadow-xl p-2 outline-none md:max-w-lg"
           value={input}
           placeholder="请输入您的问题..."
           onChange={handleInputChange}
