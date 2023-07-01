@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { StreamingTextResponse, LangChainStream, Message } from 'ai';
-import { CallbackManager } from 'langchain/callbacks';
+import { Message } from 'ai';
+import { NextResponse } from 'next/server';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import {
   AIChatMessage,
@@ -13,6 +13,7 @@ import { HNSWLib } from 'langchain/vectorstores/hnswlib';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { VECTOR_STORE_DIRECTORY } from '@/app/constants';
 import { download } from '../utils/fileUtils';
+import { checkLlmChain } from '../utils/llm';
 
 const dowloadVectoreStore = async (directory: string) => {
   const argsJson = path.join(directory, 'args.json');
@@ -36,22 +37,32 @@ const dowloadVectoreStore = async (directory: string) => {
   ]);
 };
 
+const checkPrompt = async (prompt: string): Promise<boolean> => {
+  const checkChain = checkLlmChain();
+  const res = await checkChain.call({ question: prompt });
+  return res.text.includes('Y');
+};
+
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
+  const isLawQuestion = await checkPrompt(userSubmitPrompt.content);
+  if (!isLawQuestion) {
+    return NextResponse.json({
+      answer:
+        '很抱歉，作为法律专家，我可能无法就与法律无关的话题展开深入的交谈。',
+    });
+  }
 
   const directory = path.join('/tmp', VECTOR_STORE_DIRECTORY);
   await dowloadVectoreStore(directory);
   const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
-  const similarDocs = await vectorStore.similaritySearch(
-    userSubmitPrompt.content,
-    2
-  );
+  const links = await vectorStore.similaritySearch(userSubmitPrompt.content, 2);
 
-  const { stream, handlers } = LangChainStream();
   const llm = new ChatOpenAI({
-    streaming: true,
-    callbackManager: CallbackManager.fromHandlers(handlers),
+    openAIApiKey: process.env.CHATGPT_APIKEY,
+    temperature: 0.9,
+    maxTokens: 500,
   });
 
   const chatMessages: BaseChatMessage[] = [
@@ -70,14 +81,29 @@ export async function POST(req: Request) {
   );
   chatMessages.push(
     new HumanChatMessage(`
-    ####information: ${similarDocs
-      .map((x) => x.pageContent)
-      .join('\n' + '-'.repeat(20) + '\n')}####
     user question: ${userSubmitPrompt.content}
+
+    ####information: ${links
+      .map((x) => {
+        const lawName = path.basename(
+          x.metadata.source,
+          path.extname(x.metadata.source)
+        );
+        return `${lawName}: ${x.pageContent}`;
+      })
+      .join('\n' + '-'.repeat(20) + '\n')}####
     `)
   );
 
-  llm.call(chatMessages).catch(console.error);
-
-  return new StreamingTextResponse(stream);
+  const ressult = await llm.call(chatMessages);
+  return NextResponse.json({
+    answer: ressult.text,
+    links: links.map((link) => {
+      const lawName = path.basename(
+        link.metadata.source,
+        path.extname(link.metadata.source)
+      );
+      return `${link.pageContent} —— ${lawName}`;
+    }),
+  });
 }
