@@ -1,3 +1,7 @@
+export interface CheckResult {
+  isLawQuestion: boolean;
+}
+
 export interface QaResult {
   answer: string;
   links: string[];
@@ -9,6 +13,24 @@ export interface Message {
   role: 'system' | 'user' | 'assistant';
   links?: string[];
 }
+
+export const checkPrompt = async (prompt: string): Promise<CheckResult> => {
+  const response = await fetch('/api/check', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+    }),
+  });
+
+  if (response.ok) {
+    const result = await response.json();
+    return result;
+  }
+  throw new Error();
+};
 
 export const submitQuestion = async (
   messages: Message[]
@@ -27,5 +49,5 @@ export const submitQuestion = async (
     return result;
   }
 
-  throw new Error('问答异常');
+  throw new Error();
 };

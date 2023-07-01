@@ -9,7 +9,7 @@ import {
 } from 'react-icons/ai';
 import { toast } from 'react-toastify';
 import { Slide, ToastContainer } from 'react-toastify';
-import { Message, QaResult, submitQuestion } from './chat';
+import { Message, QaResult, checkPrompt, submitQuestion } from './chat';
 import 'react-toastify/dist/ReactToastify.css';
 
 export default function Home() {
@@ -36,21 +36,43 @@ export default function Home() {
     e.preventDefault();
     setIsLoading(true);
 
-    const newMessags = [
+    const newMessages = [
       ...messages,
       { id: uuidv4(), role: 'user', content: input } as Message,
     ];
-    setMessages(newMessags);
+    setMessages(newMessages);
     setInput('');
 
     try {
-      const res = await submitQuestion(newMessags);
+      const { isLawQuestion } = await checkPrompt(input);
+      if (!isLawQuestion) {
+        setMessages([
+          ...newMessages,
+          {
+            id: uuidv4(),
+            role: 'assistant',
+            content:
+              '很抱歉，作为法律专家，我可能无法就与法律无关的话题展开深入的交谈。',
+          },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+    } catch (e) {
+      setMessages(newMessages.slice(0, -1));
+      toast.error('问错错误，请稍后重试');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await submitQuestion(newMessages);
       setResult({
         answer: res.answer,
         links: res.links,
       });
     } catch (e) {
-      setMessages(newMessags.slice(0, -1));
+      setMessages(newMessages.slice(0, -1));
       toast.error('问错错误，请稍后重试');
     } finally {
       setIsLoading(false);

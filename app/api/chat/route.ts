@@ -13,7 +13,6 @@ import { HNSWLib } from 'langchain/vectorstores/hnswlib';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { VECTOR_STORE_DIRECTORY } from '@/app/constants';
 import { download } from '../utils/fileUtils';
-import { checkLlmChain } from '../utils/llm';
 
 const dowloadVectoreStore = async (directory: string) => {
   const argsJson = path.join(directory, 'args.json');
@@ -37,22 +36,9 @@ const dowloadVectoreStore = async (directory: string) => {
   ]);
 };
 
-const checkPrompt = async (prompt: string): Promise<boolean> => {
-  const checkChain = checkLlmChain();
-  const res = await checkChain.call({ question: prompt });
-  return res.text.includes('Y');
-};
-
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
-  const isLawQuestion = await checkPrompt(userSubmitPrompt.content);
-  if (!isLawQuestion) {
-    return NextResponse.json({
-      answer:
-        '很抱歉，作为法律专家，我可能无法就与法律无关的话题展开深入的交谈。',
-    });
-  }
 
   const directory = path.join('/tmp', VECTOR_STORE_DIRECTORY);
   await dowloadVectoreStore(directory);
