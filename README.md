@@ -1,5 +1,13 @@
-# LawQA
+# 法律问答系统
 
-A question answering system for law in Chinese.
+中国法律 AI 问答系统。
 
-#### [Demo](https://next-lawqa.vercel.app/)
+## [English](./README-en.md)
+
+## [演示地址](https://next-lawqa.vercel.app/)
+
+## Feat
+
+* [x] 劳动法
+* [x] 劳动合同法
+* [x] 社会保险法
