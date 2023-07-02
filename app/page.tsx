@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AiOutlineRobot, AiOutlineUser } from 'react-icons/ai';
 import { toast } from 'react-toastify';
@@ -27,13 +27,6 @@ export default function Home() {
     isLoading: loading,
   } = useChatWrapper({});
   const [links, setLinks] = useState<Link[][]>([]);
-
-  useEffect(() => {
-    if (!loading) {
-      console.log('loading is over');
-      console.log({ messages });
-    }
-  }, [loading]);
 
   const handlePromptSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
