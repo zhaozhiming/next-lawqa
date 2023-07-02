@@ -1,7 +1,4 @@
-import path from 'path';
-import fs from 'fs';
-import { Message } from 'ai';
-import { NextResponse } from 'next/server';
+import { LangChainStream, Message, StreamingTextResponse } from 'ai';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import {
   AIChatMessage,
@@ -9,47 +6,18 @@ import {
   HumanChatMessage,
   SystemChatMessage,
 } from 'langchain/schema';
-import { HNSWLib } from 'langchain/vectorstores/hnswlib';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { VECTOR_STORE_DIRECTORY } from '@/app/constants';
-import { download } from '../utils/fileUtils';
-
-const dowloadVectoreStore = async (directory: string) => {
-  const argsJson = path.join(directory, 'args.json');
-  const docstoreJson = path.join(directory, 'docstore.json');
-  const hnswlibIndex = path.join(directory, 'hnswlib.index');
-  if (
-    fs.existsSync(directory) &&
-    fs.existsSync(argsJson) &&
-    fs.existsSync(docstoreJson) &&
-    fs.existsSync(hnswlibIndex)
-  )
-    return;
-
-  fs.mkdirSync(directory);
-  const baseUrl =
-    'https://raw.githubusercontent.com/zhaozhiming/next-lawqa/main/vector-store';
-  await Promise.all([
-    download(`${baseUrl}/args.json`, argsJson),
-    download(`${baseUrl}/docstore.json`, docstoreJson),
-    download(`${baseUrl}/hnswlib.index`, hnswlibIndex),
-  ]);
-};
+import { Link } from '@/app/data-structure';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, links = [] }: { messages: Message[]; links: Link[] } =
+    await req.json();
   const userSubmitPrompt = messages[messages.length - 1];
-
-  const directory = path.join('/tmp', VECTOR_STORE_DIRECTORY);
-  await dowloadVectoreStore(directory);
-  const vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
-  const links = await vectorStore.similaritySearch(userSubmitPrompt.content, 2);
-
+  const { stream, handlers } = LangChainStream();
   const llm = new ChatOpenAI({
     openAIApiKey: process.env.CHATGPT_APIKEY,
     temperature: 0.9,
     maxTokens: 500,
-    timeout: 10000,
+    streaming: true,
   });
 
   const chatMessages: BaseChatMessage[] = [
@@ -72,25 +40,12 @@ export async function POST(req: Request) {
 
     ####information: ${links
       .map((x) => {
-        const lawName = path.basename(
-          x.metadata.source,
-          path.extname(x.metadata.source)
-        );
-        return `${lawName}: ${x.pageContent}`;
+        return `${x.file}: ${x.content}`;
       })
       .join('\n' + '-'.repeat(20) + '\n')}####
     `)
   );
 
-  const ressult = await llm.call(chatMessages);
-  return NextResponse.json({
-    answer: ressult.text,
-    links: links.map((link) => {
-      const lawName = path.basename(
-        link.metadata.source,
-        path.extname(link.metadata.source)
-      );
-      return `${link.pageContent} —— ${lawName}`;
-    }),
-  });
+  llm.call(chatMessages, {}, [handlers]).catch(console.error);
+  return new StreamingTextResponse(stream);
 }

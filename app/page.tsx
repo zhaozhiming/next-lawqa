@@ -1,53 +1,56 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  AiOutlineLoading3Quarters,
-  AiOutlineRobot,
-  AiOutlineUser,
-} from 'react-icons/ai';
+import { AiOutlineRobot, AiOutlineUser } from 'react-icons/ai';
 import { toast } from 'react-toastify';
 import { Slide, ToastContainer } from 'react-toastify';
-import { Message, QaResult, checkPrompt, submitQuestion } from './chat';
+import { Message, UseChatOptions, useChat } from 'ai/react';
 import 'react-toastify/dist/ReactToastify.css';
+import { checkPrompt, queryLinks } from './chat';
+import { Link } from './data-structure';
+
+const useChatWrapper = (options?: UseChatOptions) => {
+  const id = useId();
+  const chat = useChat({ ...(options ?? {}), id });
+  return chat;
+};
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [result, setResult] = useState<QaResult>();
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    messages,
+    setMessages,
+    input,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+    isLoading: loading,
+  } = useChatWrapper({});
+  const [links, setLinks] = useState<Link[][]>([]);
 
   useEffect(() => {
-    if (result) {
-      setMessages([
-        ...messages,
-        {
-          id: uuidv4(),
-          role: 'assistant',
-          content: result.answer,
-          links: result.links,
-        },
-      ]);
+    if (!loading) {
+      console.log('loading is over');
+      console.log({ messages });
     }
-  }, [result]);
+  }, [loading]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePromptSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!input || !input.trim()) return;
 
-    const newMessages = [
-      ...messages,
-      { id: uuidv4(), role: 'user', content: input } as Message,
-    ];
-    setMessages(newMessages);
+    const prompt = input.trim();
     setInput('');
-
     try {
-      const { isLawQuestion } = await checkPrompt(input);
+      const { isLawQuestion } = await checkPrompt(prompt);
       if (!isLawQuestion) {
         setMessages([
-          ...newMessages,
+          ...messages,
+          {
+            id: uuidv4(),
+            role: 'user',
+            content: prompt,
+          },
           {
             id: uuidv4(),
             role: 'assistant',
@@ -55,34 +58,32 @@ export default function Home() {
               '很抱歉，作为法律专家，我可能无法就与法律无关的话题展开深入的交谈。',
           },
         ]);
-        setIsLoading(false);
+        setLinks([...links, []]);
         return;
       }
     } catch (e) {
-      setMessages(newMessages.slice(0, -1));
       toast.error('问错错误，请稍后重试');
-      setIsLoading(false);
       return;
     }
 
+    let promptLinks = [];
     try {
-      const res = await submitQuestion(newMessages);
-      setResult({
-        answer: res.answer,
-        links: res.links,
-      });
+      const res = await queryLinks(prompt);
+      promptLinks = res.links;
+      setLinks([...links, promptLinks]);
     } catch (e) {
-      setMessages(newMessages.slice(0, -1));
       toast.error('问错错误，请稍后重试');
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    handleSubmit(e, { options: { body: { links: promptLinks } } });
   };
 
-  const renderMessage = (message: Message) => {
+  const renderMessage = (message: Message, index: number) => {
+    const answerLinks = message.role === 'assistant' && links[(index - 1) / 2];
     return (
       <div className="flex flex-col py-8 divide-y" key={message.id}>
-        <div className={`flex flex-row ${message.links && 'mb-6'}`}>
+        <div className={`flex flex-row ${answerLinks && 'mb-6'}`}>
           <div className="mr-2 mt-0.5 ">
             {message.role === 'user' ? (
               <AiOutlineUser className="h-6 w-6" />
@@ -92,12 +93,14 @@ export default function Home() {
           </div>
           <span>{message.content}</span>
         </div>
-        {message.links && (
+        {answerLinks && answerLinks?.length > 0 && (
           <div className="pt-6">
             <h3 className="text-sm">参考资料</h3>
             <ol className="mt-2 flex flex-col gap-y-2 text-xs pl-4 list-disc">
-              {message.links?.map((x) => (
-                <li key={x}>{x}</li>
+              {answerLinks.map((x: Link) => (
+                <li key={uuidv4()}>
+                  {x.content} —— {x.file}
+                </li>
               ))}
             </ol>
           </div>
@@ -106,14 +109,10 @@ export default function Home() {
     );
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
-
   const handleReset = () => {
     setMessages([]);
     setInput('');
-    setResult(undefined);
+    setLinks([]);
   };
 
   return (
@@ -128,13 +127,12 @@ export default function Home() {
         </button>
       </div>
       <div className="flex flex-col divide-y px-8 ">
-        {messages.length > 0 ? messages.map((m) => renderMessage(m)) : null}
-        {isLoading && (
-          <AiOutlineLoading3Quarters className="icon-spin h-6 w-6" />
-        )}
+        {messages.length > 0
+          ? messages.map((m, i) => renderMessage(m, i))
+          : null}
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handlePromptSubmit}>
         <input
           className="fixed w-full max-w-xs mx-8 bottom-0 border border-gray-300 rounded mb-8 shadow-xl p-2 outline-none md:max-w-lg"
           value={input}
