@@ -2,7 +2,11 @@
 
 import { useId, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { AiOutlineRobot, AiOutlineUser } from 'react-icons/ai';
+import {
+  AiOutlineLoading3Quarters,
+  AiOutlineRobot,
+  AiOutlineUser,
+} from 'react-icons/ai';
 import { toast } from 'react-toastify';
 import { Slide, ToastContainer } from 'react-toastify';
 import { Message, UseChatOptions, useChat } from 'ai/react';
@@ -24,14 +28,15 @@ export default function Home() {
     setInput,
     handleInputChange,
     handleSubmit,
-    isLoading: loading,
   } = useChatWrapper({});
   const [links, setLinks] = useState<Link[][]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handlePromptSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input || !input.trim()) return;
 
+    setLoading(true);
     const prompt = input.trim();
     setInput('');
     try {
@@ -52,9 +57,11 @@ export default function Home() {
           },
         ]);
         setLinks([...links, []]);
+        setLoading(false);
         return;
       }
     } catch (e) {
+      setLoading(false);
       toast.error('问错错误，请稍后重试');
       return;
     }
@@ -67,6 +74,8 @@ export default function Home() {
     } catch (e) {
       toast.error('问错错误，请稍后重试');
       return;
+    } finally {
+      setLoading(false);
     }
 
     handleSubmit(e, { options: { body: { links: promptLinks } } });
@@ -123,6 +132,7 @@ export default function Home() {
         {messages.length > 0
           ? messages.map((m, i) => renderMessage(m, i))
           : null}
+        {loading && <AiOutlineLoading3Quarters className="icon-spin h-6 w-6 mt-8" />}
       </div>
 
       <form onSubmit={handlePromptSubmit}>

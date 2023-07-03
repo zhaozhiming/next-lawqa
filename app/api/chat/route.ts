@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     new SystemChatMessage(`
       You are a valuable assistant to the Chinese law expert. 
       Please provide answers to questions based on the information enclosed within four pound signs (####).
-      Always respond in Chinese.
+      Always respond in Chinese and the response word size should not exceed 200 Chinese words.
       If a user's question is unrelated to the law, kindly decline to answer it.`),
   ];
   chatMessages.push(
