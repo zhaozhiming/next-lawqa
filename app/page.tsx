@@ -83,9 +83,10 @@ export default function Home() {
 
   const renderMessage = (message: Message, index: number) => {
     const answerLinks = message.role === 'assistant' && links[(index - 1) / 2];
+    const hasLinks = answerLinks && answerLinks?.length > 0;
     return (
       <div className="flex flex-col py-8 divide-y" key={message.id}>
-        <div className={`flex flex-row ${answerLinks && 'mb-6'}`}>
+        <div className={`flex flex-row ${hasLinks && 'mb-6'}`}>
           <div className="mr-2 mt-0.5 ">
             {message.role === 'user' ? (
               <AiOutlineUser className="h-6 w-6" />
@@ -95,7 +96,7 @@ export default function Home() {
           </div>
           <span>{message.content}</span>
         </div>
-        {answerLinks && answerLinks?.length > 0 && (
+        {hasLinks && (
           <div className="pt-6">
             <h3 className="text-sm">参考资料</h3>
             <ol className="mt-2 flex flex-col gap-y-2 text-xs pl-4 list-disc">
@@ -132,7 +133,9 @@ export default function Home() {
         {messages.length > 0
           ? messages.map((m, i) => renderMessage(m, i))
           : null}
-        {loading && <AiOutlineLoading3Quarters className="icon-spin h-6 w-6 mt-8" />}
+        {loading && (
+          <AiOutlineLoading3Quarters className="icon-spin h-6 w-6 mt-8" />
+        )}
       </div>
 
       <form onSubmit={handlePromptSubmit}>
